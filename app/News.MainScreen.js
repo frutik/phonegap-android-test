@@ -1,4 +1,84 @@
 Ext.ns('News');
+                                                                                                                                                                                                
+var NewStorage = new function() {                                                                                                                                                                     
+
+    var that = this;  
+
+	this.storage = false;
+	this.storageShortName = 'newsteua'; 
+	this.storageVersion = '1.0'; 
+	this.storageDisplayName = 'News.Te.Ua Database'; 
+	this.storageMaxSize = 65536;
+
+	this.storageErrorHandler = function(transaction, error) {
+		
+		console.log(error.message);
+	
+		if (error.code == 5) {
+			alert('create new storage tables');
+			console.log('create new storage tables');
+			try {
+        		transaction.executeSql('CREATE TABLE items(id INTEGER NOT NULL PRIMARY KEY, content TEXT NOT NULL DEFAULT "");', [], that.storageNullDataHandler, that.storageNullDataHandler); 
+	//			that.storageInitTables();
+			}  catch(e) {
+        		// alert(e.message);
+        		return;
+      		}
+			
+		} 
+
+      	return true;  
+    };
+	
+	this.storageDataHandler = function(transaction, results) {
+		alert(results); 
+    	//for (var i=0; i<results.rows.length; i++) { 
+        //var row = results.rows.item(i); 
+        //html += '<li>'+row['name']+'</li>\n';
+      //}
+      	return true; 
+    };
+ 	
+ 	this.storageNullDataHandler = function (transaction, results) {};
+
+	this.getInitialRecords = function(dataHandler) {
+		try {
+			that.storage.transaction(function(transaction) {
+				transaction.executeSql('SELECT * FROM items ORDER BY id',[], that.storageDataHandler, that.storageErrorHandler);
+			});
+		} catch(e) {
+			alert(e.message);
+		}
+		
+		return [];
+	};
+
+	this.init = function() {
+	
+		if (!window.openDatabase) { 
+			return false; 
+        }
+		
+		try { 
+        	that.storage = openDatabase(
+        		that.storageShortName, 
+        		that.storageVersion, 
+        		that.storageDisplayName, 
+        		that.storageMaxSize
+    		); 
+ 		} catch(e) {
+			if (e == INVALID_STATE_ERR) { 
+				// Version number mismatch. 
+				alert("Invalid database version."); 
+			} else { 
+				alert("Unknown error "+e+"."); 
+			}
+			return false; 
+		}
+	};
+	
+	this.init();
+}
 
 News.MainScreen = Ext.extend(Ext.Carousel, {
 
@@ -72,18 +152,21 @@ News.MainScreen = Ext.extend(Ext.Carousel, {
 //    	this.on('beforecardswitch', this.onCardSwitch, this);
     	    
         News.MainScreen.superclass.initComponent.call(this);
-		
-		if (window.openDatabase) { 
-          //alert('it works!'); 
-        }
-
 
 		this.loadInitialData();
     },
 
+	addCard: function(json) {
+		that = this;
+	
+		this.add(this.getCard(json));
+	},
+
 	loadInitialData: function() {
-		this.add(this.getCard(1));
-		this.add(this.getCard(2));
+		NewStorage.getInitialRecords(this.addCard);
+		
+		this.addCard(1);
+		this.addCard(2);
 	}
 	
 });
