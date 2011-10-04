@@ -10,7 +10,7 @@ var NewStorage = new function() {
 	this.storageDisplayName = 'News.Te.Ua Database'; 
 	this.storageMaxSize = 65536;
 
-	this.storageErrorHandler = function(transaction, error) {
+	this.errorHandler = function(transaction, error) {
 		
 		console.log(error.message);
 	
@@ -18,39 +18,44 @@ var NewStorage = new function() {
 			alert('create new storage tables');
 			console.log('create new storage tables');
 			try {
-        		transaction.executeSql('CREATE TABLE items(id INTEGER NOT NULL PRIMARY KEY, content TEXT NOT NULL DEFAULT "");', [], that.storageNullDataHandler, that.storageNullDataHandler); 
-	//			that.storageInitTables();
+				that.storage.transaction(function(tx) {
+	        		tx.executeSql('CREATE TABLE items(id INTEGER NOT NULL PRIMARY KEY, content TEXT NOT NULL DEFAULT "");', [], that.nullDataHandler, that.nullDataHandler); 
+				});
 			}  catch(e) {
-        		// alert(e.message);
-        		return;
+        		alert(e.message);
       		}
-			
-		} 
+
+    		return;
+		}
+		
+		alert(error.message);
 
       	return true;  
     };
 	
-	this.storageDataHandler = function(transaction, results) {
-		alert(results); 
-    	//for (var i=0; i<results.rows.length; i++) { 
-        //var row = results.rows.item(i); 
-        //html += '<li>'+row['name']+'</li>\n';
-      //}
-      	return true; 
-    };
- 	
- 	this.storageNullDataHandler = function (transaction, results) {};
+ 	this.nullDataHandler = function (transaction, results) {};
 
 	this.getInitialRecords = function(dataHandler) {
+//		that.storage.transaction(function(tx) {
+//    		tx.executeSql('insert into items values (1, "test 1");', [], that.nullDataHandler, that.nullDataHandler); 
+//    		tx.executeSql('insert into items values (2, "test 2");', [], that.nullDataHandler, that.nullDataHandler); 
+//		});
+
 		try {
 			that.storage.transaction(function(transaction) {
-				transaction.executeSql('SELECT * FROM items ORDER BY id',[], that.storageDataHandler, that.storageErrorHandler);
+				transaction.executeSql('SELECT * FROM items ORDER BY id',[], dataHandler, that.errorHandler);
 			});
 		} catch(e) {
 			alert(e.message);
 		}
 		
 		return [];
+	};
+
+	this.getPrevRecords = function(dataHandler, currentIdx) {
+	};
+
+	this.getNextRecords = function(dataHandler) {
 	};
 
 	this.init = function() {
@@ -81,6 +86,8 @@ var NewStorage = new function() {
 }
 
 News.MainScreen = Ext.extend(Ext.Carousel, {
+	
+	singleton: true,
 
 	cardSwitchAnimation: 'fade',
 	
@@ -132,7 +139,7 @@ News.MainScreen = Ext.extend(Ext.Carousel, {
 
 	getCard: function(node) {
 		return new Ext.Panel({
-    			html: 'item' + node,
+    			html: node,
 	            listeners: {
 		            //activate : function() {alert("bam!")},
 		        }
@@ -156,17 +163,52 @@ News.MainScreen = Ext.extend(Ext.Carousel, {
 		this.loadInitialData();
     },
 
-	addCard: function(json) {
-		that = this;
-	
+	appendCard: function(json) {
 		this.add(this.getCard(json));
 	},
 
+	prependCard: function(json) {
+		this.insert(0, this.getCard(json));
+	},
+
+	appendDataHandler: function(transaction, results) {
+		for (var i=0; i<results.rows.length; i++) { 
+			var row = results.rows.item(i);
+			main.appendCard(row['content']);
+      	}
+      	
+      	if (results.rows.length > 0) {
+			main.doLayout();
+      	}
+      	 
+      	return true; 
+    },
+
+	prependDataHandler: function(transaction, results) {
+		for (var i=0; i<results.rows.length; i++) { 
+			var row = results.rows.item(i);
+			main.appendCard(row['content']);
+      	}
+
+      	if (results.rows.length > 0) {
+			main.doLayout();
+      	}
+
+      	return true; 
+    },
+
 	loadInitialData: function() {
-		NewStorage.getInitialRecords(this.addCard);
-		
-		this.addCard(1);
-		this.addCard(2);
+		NewStorage.getInitialRecords(this.appendDataHandler);
+		//this.appendCard(1);
+		//this.appendCard(2);
+	}, 
+
+	loadPrevData: function() {
+		NewStorage.getPrevRecords(this.prependDataHandler, 0);
+	}, 
+	
+	loadNextData: function() {
+		NewStorage.getNextRecords(this.appendDataHandler);
 	}
 	
 });
