@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>mobile-webapps.blogspot.com - Sencha Touch Tutorial</title>
+
+        <link rel="stylesheet" href="sencha-touch/resources/css/sencha-touch.css" type="text/css">
+
+        <script type="text/javascript" src="js/phonegap-1.0.0.js"></script>
+
+        <script type="text/javascript" src="sencha-touch/sencha-touch.js"></script>
+        <script type="text/javascript" src="app/News.MainScreen.js"></script>
+    </head>
+    <body>
+        <script type="text/javascript">
+            Ext.setup({
+                onReady: function() {
+                    new News.MainScreen();
+                }
+            });
+        </script>
+    </body>
+</html>
