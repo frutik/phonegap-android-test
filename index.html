@@ -9,13 +9,16 @@
 
         <script type="text/javascript" src="sencha-touch/sencha-touch.js"></script>
         <script type="text/javascript" src="app/News.MainScreen.js"></script>
-        <script type="text/javascript" src="app/News.Storage.js"></script>
+        <script type="text/javascript" src="app/News.Storage2.js"></script>
     </head>
     <body>
         <script type="text/javascript">
         	var main = false;
+        	var storage = false;
             Ext.setup({
                 onReady: function() {
+                	//Ext.ns('News');
+                    storage = new News.Storage(); 
                     main = new News.MainScreen();
                 }
             });

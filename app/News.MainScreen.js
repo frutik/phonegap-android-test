@@ -6,11 +6,15 @@ News.MainScreen = Ext.extend(Ext.Carousel, {
 
 	cardSwitchAnimation: 'fade',
 	
-	layout: {
-		type: 'card'
-	},
+	indicator: true,
+	
+	layout: 'card',
 
     listeners: {
+    	tap: function() {
+    		alert('!!!');
+    	},
+    
 		cardswitch: function(container, newCard, oldCard, index) {
 			console.log(container, newCard, oldCard, index);
 			
@@ -18,43 +22,29 @@ News.MainScreen = Ext.extend(Ext.Carousel, {
 	
 			if (cnt == index + 1) {
 				console.log('last card');
-				this.addCardAfter(cnt);
+				// http://nachbaur.com/blog/telling-your-user-that-a-phonegap-application-is-busy
+				// http://stackoverflow.com/questions/7063910/phonegap-navigator-notification-activitystart-and-loadingstart-not-working
+				// https://github.com/phonegap/phonegap-plugins/tree/master/Android/StatusBarNotification
+				Ext.getBody().mask();
+				//navigator.notification.loadingStart();
+				this.loadNextData(newCard.id);
+				Ext.getBody().unmask();
+				//navigator.notification.loadingStop();
     	    } else if (index == 0) {
 				console.log('first card');
-    	    	this.addCardBefore();
+				Ext.getBody().mask();
+				//navigator.notification.loadingStart();
+				this.loadPrevData(newCard.id);
+				Ext.getBody().unmask();
+				//navigator.notification.loadingStop();
     	    }
         }
     },
 
-	addCardAfter: function(cnt) {
-		Ext.getBody().mask();
-		//navigator.notification.loadingStart();
-
-		for (i = cnt + 1; i < cnt + 5; i++) {
-			console.log('added card ' + i);
-			this.add(this.getCard(i));
-		}	
-
-		this.doLayout();
-		
-		Ext.getBody().unmask();
-		//navigator.notification.loadingStop();
-	},
-
-	addCardBefore: function() {
-		Ext.getBody().mask();
-		//navigator.notification.loadingStart();
-
-		this.insert(0, this.getCard(0));
-		this.doLayout();
-		
-		Ext.getBody().unmask();
-		//navigator.notification.loadingStop();
-	},
-
 	getCard: function(node) {
 		return new Ext.Panel({
-    			html: node,
+    			html: node['content'],
+    			id: node['id'],
 	            listeners: {
 		            //activate : function() {alert("bam!")},
 		        }
@@ -70,26 +60,51 @@ News.MainScreen = Ext.extend(Ext.Carousel, {
         
         this.items = [];
 
-  //      childPanel.on('addpanel', this.onAddPanel, this);
-//    	this.on('beforecardswitch', this.onCardSwitch, this);
-    	    
+		this.storage = new News.Storage();
+    	  
         News.MainScreen.superclass.initComponent.call(this);
 
-		this.loadInitialData();
+    	this.storage.addListener('new_data', function() { alert('!!!'); }, this);
+
+		//News.Storage.fetchCards();
+
+		//this.loadInitialData();
+		this.storage.test();
     },
 
-	appendCard: function(json) {
-		this.add(this.getCard(json));
+	test: function() {
+		console.log('test');
 	},
 
-	prependCard: function(json) {
-		this.insert(0, this.getCard(json));
+	appendCard: function(row) {
+		this.add(this.getCard(row));
+	},
+
+	prependCard: function(row) {
+		this.insert(0, this.getCard(row));
 	},
 
 	appendDataHandler: function(transaction, results) {
-		for (var i=0; i<results.rows.length; i++) { 
+		console.log(results);
+
+		if (results.rows.length == 0) {
+			News.Storage.fetchFromSite(main.appendDataHandler2);
+			return true;
+		}
+	
+      	return main.appendData(results); 
+    },
+
+	appendDataHandler2: function(transaction, results) {
+      	return main.appendData(results); 
+    },
+
+	appendData: function(results) {
+		console.log(results);
+
+		for (var i = 0; i < results.rows.length; i++) { 
 			var row = results.rows.item(i);
-			main.appendCard(row['content']);
+			main.appendCard(row);
       	}
       	
       	if (results.rows.length > 0) {
@@ -98,22 +113,13 @@ News.MainScreen = Ext.extend(Ext.Carousel, {
       	 
       	return true; 
     },
-
+    
 	prependDataHandler: function(transaction, results) {
-		for (var i=0; i<results.rows.length; i++) { 
-			var row = results.rows.item(i);
-			main.appendCard(row['content']);
-      	}
-
-      	if (results.rows.length > 0) {
-			main.doLayout();
-      	}
-
       	return true; 
     },
 
 	loadInitialData: function() {
-		News.Storage.getInitialRecords(this.appendDataHandler);
+		storage.getInitialRecords(this.appendDataHandler);
 		//this.appendCard(1); // probable page with error message - if no data available at all
 	}, 
 
@@ -121,8 +127,8 @@ News.MainScreen = Ext.extend(Ext.Carousel, {
 		News.Storage.getPrevRecords(this.prependDataHandler, 0);
 	}, 
 	
-	loadNextData: function() {
-		News.Storage.getNextRecords(this.appendDataHandler);
+	loadNextData: function(currentRecordId) {
+		News.Storage.getNextRecords(this.appendDataHandler, currentRecordId);
 	}
 	
 });
