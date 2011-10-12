@@ -43,8 +43,21 @@ News.MainScreen = Ext.extend(Ext.Carousel, {
 
 	getCard: function(node) {
 		return new Ext.Panel({
-    			html: node.title,
-    			id: node['id'],
+				//TODO store compiled
+				/*
+				var t = new Ext.Template([
+    '<div name="{id}">',
+        '<span class="{cls}">{name:trim} {value:ellipsis(10)}</span>',
+    '</div>',
+]);
+t.compile();
+t.append('some-element', {id: 'myid', cls: 'myclass', name: 'foo', value: 'bar'});
+*/				
+    			html: new Ext.XTemplate("<h4>{title}</h4><hr>{description}").apply({
+                	title: node.title,
+                	description: node.description
+            	}),
+    			id: node.id,
 	            listeners: {
 		            //activate : function() {alert("bam!")},
 		        }
@@ -71,8 +84,6 @@ News.MainScreen = Ext.extend(Ext.Carousel, {
 
 	reloadItems: function() {
 		var results = this.storage.getData();
-
-		alert(results);
 
 		for (var i = 0; i < results.length; i++) { 
 			main.appendCard(results[i]);
