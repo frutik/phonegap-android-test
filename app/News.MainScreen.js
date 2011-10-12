@@ -43,7 +43,7 @@ News.MainScreen = Ext.extend(Ext.Carousel, {
 
 	getCard: function(node) {
 		return new Ext.Panel({
-    			html: node['content'],
+    			html: node.title,
     			id: node['id'],
 	            listeners: {
 		            //activate : function() {alert("bam!")},
@@ -64,16 +64,27 @@ News.MainScreen = Ext.extend(Ext.Carousel, {
     	  
         News.MainScreen.superclass.initComponent.call(this);
 
-    	this.storage.addListener('new_data', function() { alert('!!!'); }, this);
+    	this.storage.addListener('data_loaded', this.reloadItems, this);
 
-		//News.Storage.fetchCards();
-
-		//this.loadInitialData();
-		this.storage.test();
+		this.loadInitialData();
     },
 
-	test: function() {
-		console.log('test');
+	reloadItems: function() {
+		var results = this.storage.getData();
+
+		alert(results);
+
+		for (var i = 0; i < results.length; i++) { 
+			main.appendCard(results[i]);
+      	}
+      	
+      	// set active card
+      	
+      	if (results.length > 0) {
+			main.doLayout();
+      	}
+      	 
+      	return true; 
 	},
 
 	appendCard: function(row) {
@@ -83,21 +94,6 @@ News.MainScreen = Ext.extend(Ext.Carousel, {
 	prependCard: function(row) {
 		this.insert(0, this.getCard(row));
 	},
-
-	appendDataHandler: function(transaction, results) {
-		console.log(results);
-
-		if (results.rows.length == 0) {
-			News.Storage.fetchFromSite(main.appendDataHandler2);
-			return true;
-		}
-	
-      	return main.appendData(results); 
-    },
-
-	appendDataHandler2: function(transaction, results) {
-      	return main.appendData(results); 
-    },
 
 	appendData: function(results) {
 		console.log(results);
@@ -119,16 +115,16 @@ News.MainScreen = Ext.extend(Ext.Carousel, {
     },
 
 	loadInitialData: function() {
-		storage.getInitialRecords(this.appendDataHandler);
+		this.storage.getInitialRecords();
 		//this.appendCard(1); // probable page with error message - if no data available at all
 	}, 
 
-	loadPrevData: function() {
-		News.Storage.getPrevRecords(this.prependDataHandler, 0);
+	loadPrevData: function(currentRecordId) {
+		this.storage.getPrevRecords(currentRecordId);
 	}, 
 	
 	loadNextData: function(currentRecordId) {
-		News.Storage.getNextRecords(this.appendDataHandler, currentRecordId);
+		this.storage.getNextRecords(currentRecordId);
 	}
 	
 });

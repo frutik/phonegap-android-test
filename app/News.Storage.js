@@ -1,8 +1,13 @@
-//Ext.ns('News');
+Ext.ns('News');
 
 News.Storage = Ext.extend(Ext.util.Observable, {                                                                                                                                        
                                                                                                                                                                                                 
     //singleton: true,                                    
+    
+    actionFetchInitial: '',
+    actionFetchAfter: 'a',
+    actionFetchBefore: 'a',
+    actionFetchLimit: 'l',
                                                                                                                                                                                                 
 	storage: false,
 	storageShortName: 'newsteua', 
@@ -10,37 +15,58 @@ News.Storage = Ext.extend(Ext.util.Observable, {
 	storageDisplayName: 'News.Te.Ua Database', 
 	storageMaxSize: 6553600,
 	
-	initialBatch: 2,
+	initialBatch: 10,
 	preloadBatch: 2,
 
-	fetchFromSite: function(dataHandler, recordId, count) {
-		console.log('-----');
+	data: false,
+
+	fetchFromSite: function(action, recordId, count) {
+		that = this;
+		console.log(action);
+
+		url = "http://www.news.te.ua/json/";
+
+		if (!count) {
+			count = that.preloadBatch;
+		}
 		
-		dataHandler('test', 'test2');
-		//that.fireEvent('newdata'); 
-		return true;
+		url = url + that.actionFetchLimit + ':' + count + '/';
+
+		if (action == that.actionFetchAfter) {
+			url = url + that.actionFetchAfter + ':' + recordId + '/';
+		}
+
+		if (action == that.actionFetchBefore) {
+			url = url + that.actionFetchBefore + ':' + recordId + '/';
+		}
+		
+		var currentTime = new Date(); 
+		url = url + "nc:" + currentTime.valueOf() + '/';
 
 		//http://mobile-webapps.blogspot.com/2010/07/blog-post_18.html
 	 	//http://www.sencha.com/forum/showthread.php?104802-Infinite-carousel
 		//http://stackoverflow.com/questions/6554714/sencha-touch-carousel-and-json
         var request = new XMLHttpRequest();
-        var currentTime = new Date(); 
-        request.open("GET", "http://www.news.te.ua/json/l:10/nc:" + currentTime.valueOf() + '/', true); 
+        
+        request.open("GET", url, true); 
         request.onreadystatechange = function() {//Call a function when the state changes. 
             if(request.readyState == 4) { 
-                    console.log("*"+request.responseText+"*"); 
-                    var tweets = JSON.parse(request.responseText); 
-                    // Do something with the data here.                             
-            		for (i = 0; i < tweets.length; i++) {
-			        	that.storage.transaction(function(tx) {
-							tx.executeSql('insert into news	 values (?, ?);', [tweets[i]['id'], tweets[i]['title']], that.nullDataHandler, that.nullDataHandler); 
-			        	});
-            			
-            		}
-            		
+                console.log("*"+request.responseText+"*");
+                var records = JSON.parse(request.responseText); 
+        		for (i = 0; i < records.length; i++) {
+		        	that.storage.transaction(function(tx) {
+						tx.executeSql('insert into news	 values (?, ?);', [records[i].id, records[i].title], that.nullDataHandler, that.nullDataHandler); 
+		        	});
+        		}
+				
+				// cout 0???
+				
+				that.data = records;
+				that.fireEvent('data_loaded'); 
             } 
         } 
-        console.log("asking for tweets"); 
+        
+        console.log("asking for news"); 
         request.send(); 
      },
 
@@ -59,14 +85,44 @@ News.Storage = Ext.extend(Ext.util.Observable, {
 	
  	nullDataHandler: function (transaction, results) {
  	},
+/*
+	initialDataHandler: function(transaction, results) {
+		that = this;
+	
+		console.log(results);
 
-	getInitialRecords: function(dataHandler) {
+		if (results.rows.length == 0) {
+			//main.storage.fetchFromSite(main.appendDataHandler2);
+			return true;
+		}
+	alert(News.Storage.data);
+		News.Storage.data = results;
+		News.Storage.fireEvent('initial_data_loaded'); 
+    },
+*/
+	getData: function() {
+		return this.data;
+	},
+
+	getInitialRecords: function() {
+		that = this;
+
+		console.log('getting initial recordset from db');
+	
 		try {
-			that.storage.transaction(function(tx) {
+			this.storage.transaction(function(tx) {
 				tx.executeSql(
-					'SELECT * FROM items where id > 100 ORDER BY id LIMIT ?',
+					'SELECT * FROM news where id > 0 ORDER BY id LIMIT ?',
 					[that.initialBatch], 
-					dataHandler, 
+					function(transaction, results) {
+						console.log(results);
+						if (results.rows.length == 0) {
+							that.fetchFromSite(that.actionFetchInitial, null, that.initialBatch);
+							return true;
+						}
+						that.data = results.rows;
+						that.fireEvent('data_loaded'); 
+    				}, 
 					that.logErrorHandler
 				);
 			});
@@ -75,15 +131,50 @@ News.Storage = Ext.extend(Ext.util.Observable, {
 		}
 	},
 
-	getPrevRecords: function(dataHandler, currentIdx) {},
-
-	getNextRecords: function(dataHandler, currentRecordId) {
+	getPrevRecords: function(currentRecordId) {
+		that = this;
 		try {
 			that.storage.transaction(function(tx) {
 				tx.executeSql(
-					'SELECT * FROM news WHERE id > ? ORDER BY id LIMIT ?',
+					'SELECT * FROM items WHERE id < ? ORDER BY id LIMIT ?',
 					[currentRecordId, that.preloadBatch], 
-					dataHandler, 
+					function(transaction, results) {
+						console.log(results);
+						if (results.rows.length == 0) {
+							//main.storage.fetchFromSite(main.appendDataHandler2);
+							return true;
+						}
+					
+						// TODO combine old and new data????
+						that.data = results;
+						that.fireEvent('data_loaded'); 
+    				}, 
+					that.errorHandler
+				);
+			});
+		} catch(e) {
+			alert(e.message);
+		}
+	},
+
+	getNextRecords: function(currentRecordId) {
+		that = this;
+		try {
+			that.storage.transaction(function(tx) {
+				tx.executeSql(
+					'SELECT * FROM items WHERE id > ? ORDER BY id LIMIT ?',
+					[currentRecordId, that.preloadBatch], 
+					function(transaction, results) {
+						console.log(results);
+						if (results.rows.length == 0) {
+							//main.storage.fetchFromSite(main.appendDataHandler2);
+							return true;
+						}
+					
+						// TODO combine old and new data????
+						that.data = results;
+						that.fireEvent('data_loaded'); 
+    				}, 
 					that.errorHandler
 				);
 			});
@@ -99,29 +190,25 @@ News.Storage = Ext.extend(Ext.util.Observable, {
 	constructor: function() {
 
         this.addEvents(                                                                                                                                                                         
-            'new_data'                                                                                                                                           
+            'data_loaded'                                                                                                                                           
         );
                                                     	
 		News.Storage.superclass.constructor.call(this);
-/*
-		that = this;
-	
-		alert('!!!');
-	
+
 		if (!window.openDatabase) { 
 			return false; 
         }
 		
 		try { 
-        	that.storage = openDatabase(
-        		that.storageShortName, 
-        		that.storageVersion, 
-        		that.storageDisplayName, 
-        		that.storageMaxSize
+        	this.storage = openDatabase(
+        		this.storageShortName, 
+        		this.storageVersion, 
+        		this.storageDisplayName, 
+        		this.storageMaxSize
     		); 
     
-        	that.storage.transaction(function(tx) {
-	        	tx.executeSql('CREATE TABLE IF NOT EXISTS news(id INTEGER NOT NULL PRIMARY KEY, added TEXT NOT NULL DEFAULT "", source TEXT NOT NULL DEFAULT "", category TEXT NOT NULL DEFAULT "", url TEXT NOT NULL DEFAULT "", title TEXT NOT NULL DEFAULT "", description TEXT NOT NULL DEFAULT "");', [], that.logDataHandler, that.logErrorHandler); 
+        	this.storage.transaction(function(tx) {
+	        	tx.executeSql('CREATE TABLE IF NOT EXISTS news(id INTEGER NOT NULL PRIMARY KEY, added TEXT NOT NULL DEFAULT "", source TEXT NOT NULL DEFAULT "", category TEXT NOT NULL DEFAULT "", url TEXT NOT NULL DEFAULT "", title TEXT NOT NULL DEFAULT "", description TEXT NOT NULL DEFAULT "");', [], this.logDataHandler, this.logErrorHandler); 
         	});
 
 			return true; 
@@ -134,7 +221,6 @@ News.Storage = Ext.extend(Ext.util.Observable, {
 			}
 			return false; 
 		}
-		*/
 	}
 });
 
