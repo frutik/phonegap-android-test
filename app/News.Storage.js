@@ -53,13 +53,23 @@ News.Storage = Ext.extend(Ext.util.Observable, {
             if(request.readyState == 4) { 
                 console.log("*"+request.responseText+"*");
                 var records = JSON.parse(request.responseText); 
+
+				if (records.length || records.length < 1) {
+					return true;
+				}
+
         		for (i = 0; i < records.length; i++) {
-		        	that.storage.transaction(function(tx) {
-						tx.executeSql('insert into news	 values (?, ?);', [records[i].id, records[i].title], that.nullDataHandler, that.nullDataHandler); 
+		        	(function(record){
+		        		that.storage.transaction(function(tx) {
+						tx.executeSql(
+							'insert into news (id, added, source, category, url, title, description) values (?, ?, ?, ?, ?, ?, ?);', 
+							[record.id, records.added, record.source,	records.category, record.url, records.title, record.description],
+							that.logSuccessHandler, 
+							that.logErrorHandler
+						); 
 		        	});
+		        	})(records[i]);
         		}
-				
-				// cout 0???
 				
 				that.data = records;
 				that.fireEvent('data_loaded'); 
@@ -83,8 +93,7 @@ News.Storage = Ext.extend(Ext.util.Observable, {
 		console.log(error);
 	},
 	
- 	nullDataHandler: function (transaction, results) {
- 	},
+ 	nullDataHandler: function (transaction, results) {},
 /*
 	initialDataHandler: function(transaction, results) {
 		that = this;
@@ -115,11 +124,12 @@ News.Storage = Ext.extend(Ext.util.Observable, {
 					'SELECT * FROM news where id > 0 ORDER BY id LIMIT ?',
 					[that.initialBatch], 
 					function(transaction, results) {
-						console.log(results);
+						console.log(results.rows);
 						if (results.rows.length == 0) {
 							that.fetchFromSite(that.actionFetchInitial, null, that.initialBatch);
 							return true;
 						}
+						
 						that.data = results.rows;
 						that.fireEvent('data_loaded'); 
     				}, 
@@ -208,7 +218,7 @@ News.Storage = Ext.extend(Ext.util.Observable, {
     		); 
     
         	this.storage.transaction(function(tx) {
-	        	tx.executeSql('CREATE TABLE IF NOT EXISTS news(id INTEGER NOT NULL PRIMARY KEY, added TEXT NOT NULL DEFAULT "", source TEXT NOT NULL DEFAULT "", category TEXT NOT NULL DEFAULT "", url TEXT NOT NULL DEFAULT "", title TEXT NOT NULL DEFAULT "", description TEXT NOT NULL DEFAULT "");', [], this.logDataHandler, this.logErrorHandler); 
+	        	tx.executeSql('CREATE TABLE IF NOT EXISTS news (id INTEGER NOT NULL PRIMARY KEY, added TEXT NOT NULL DEFAULT "", source TEXT NOT NULL DEFAULT "", category TEXT NOT NULL DEFAULT "", url TEXT NOT NULL DEFAULT "", title TEXT NOT NULL DEFAULT "", description TEXT NOT NULL DEFAULT "");', [], this.logDataHandler, this.logErrorHandler); 
         	});
 
 			return true; 

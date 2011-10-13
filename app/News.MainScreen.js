@@ -45,15 +45,10 @@ News.MainScreen = Ext.extend(Ext.Carousel, {
 		return new Ext.Panel({
 				//TODO store compiled
 				/*
-				var t = new Ext.Template([
-    '<div name="{id}">',
-        '<span class="{cls}">{name:trim} {value:ellipsis(10)}</span>',
-    '</div>',
-]);
-t.compile();
-t.append('some-element', {id: 'myid', cls: 'myclass', name: 'foo', value: 'bar'});
-*/				
-    			html: new Ext.XTemplate("<h4>{title}</h4><hr>{description}").apply({
+				t.append('some-element', {id: 'myid', cls: 'myclass', name: 'foo', value: 'bar'});
+				*/				
+    			// html: new Ext.XTemplate("<h4>{title}</h4><hr>{description}").apply({
+    			html: this.elementTemplate.apply({
                 	title: node.title,
                 	description: node.description
             	}),
@@ -71,6 +66,12 @@ t.append('some-element', {id: 'myid', cls: 'myclass', name: 'foo', value: 'bar'}
             style       : 'margin:10px;'
         };
         
+        this.elementTemplate = new Ext.Template([
+    		'<h4>{title}</h4>',
+    		'<hr>',
+    		'{description}',
+        ]).compile();
+        
         this.items = [];
 
 		this.storage = new News.Storage();
@@ -84,6 +85,8 @@ t.append('some-element', {id: 'myid', cls: 'myclass', name: 'foo', value: 'bar'}
 
 	reloadItems: function() {
 		var results = this.storage.getData();
+
+		console.log(results);
 
 		for (var i = 0; i < results.length; i++) { 
 			main.appendCard(results[i]);
