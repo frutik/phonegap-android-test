@@ -22,6 +22,7 @@ News.Storage = Ext.extend(Ext.util.Observable, {
 
 	fetchFromSite: function(action, recordId, count) {
 		that = this;
+		
 		console.log(action);
 
 		url = "http://www.news.te.ua/json/";
@@ -51,10 +52,11 @@ News.Storage = Ext.extend(Ext.util.Observable, {
         request.open("GET", url, true); 
         request.onreadystatechange = function() {//Call a function when the state changes. 
             if(request.readyState == 4) { 
-                console.log("*"+request.responseText+"*");
+                console.log("*****"+request.responseText+"*****");
+
                 var records = JSON.parse(request.responseText); 
 
-				if (records.length || records.length < 1) {
+				if (!records.length || records.length < 1) {
 					return true;
 				}
 
@@ -70,14 +72,19 @@ News.Storage = Ext.extend(Ext.util.Observable, {
 		        	});
 		        	})(records[i]);
         		}
-				
-				that.data = records;
+
+				that.data = that.getDataFromWeb(records);
 				that.fireEvent('data_loaded'); 
             } 
         } 
         
         console.log("asking for news"); 
         request.send(); 
+     },
+     
+     getDataFromWeb: function(data) {
+     
+     	return data;
      },
 
 	errorHandler: function(transaction, error) {
@@ -87,28 +94,16 @@ News.Storage = Ext.extend(Ext.util.Observable, {
 
 	logSuccessHandler: function (transaction, result) {
 		console.log(result);
+      	return true;  
 	},
 
 	logErrorHandler: function (transaction, error) {
 		console.log(error);
+      	return true;  
 	},
 	
  	nullDataHandler: function (transaction, results) {},
-/*
-	initialDataHandler: function(transaction, results) {
-		that = this;
-	
-		console.log(results);
 
-		if (results.rows.length == 0) {
-			//main.storage.fetchFromSite(main.appendDataHandler2);
-			return true;
-		}
-	alert(News.Storage.data);
-		News.Storage.data = results;
-		News.Storage.fireEvent('initial_data_loaded'); 
-    },
-*/
 	getData: function() {
 		return this.data;
 	},
@@ -121,16 +116,16 @@ News.Storage = Ext.extend(Ext.util.Observable, {
 		try {
 			this.storage.transaction(function(tx) {
 				tx.executeSql(
-					'SELECT * FROM news where id > 0 ORDER BY id LIMIT ?',
+					'SELECT * FROM news where id > 10000000000 ORDER BY id LIMIT ?',
 					[that.initialBatch], 
 					function(transaction, results) {
-						console.log(results.rows);
 						if (results.rows.length == 0) {
+							console.log('EMPTY RECORDSET in News.Storage.getInitialRecords()');
 							that.fetchFromSite(that.actionFetchInitial, null, that.initialBatch);
 							return true;
 						}
-						
-						that.data = results.rows;
+	
+						that.data = that.getDataFromSql(results);
 						that.fireEvent('data_loaded'); 
     				}, 
 					that.logErrorHandler
@@ -139,6 +134,14 @@ News.Storage = Ext.extend(Ext.util.Observable, {
 		} catch(e) {
 			alert(e.message);
 		}
+	},
+
+	getDataFromSql: function(data) {
+		result = new Array();;
+		for (var i = 0; i < data.rows.length; i++) {
+			result[i] = data.rows.item(i); 
+		}
+		return result;
 	},
 
 	getPrevRecords: function(currentRecordId) {

@@ -86,7 +86,7 @@ News.MainScreen = Ext.extend(Ext.Carousel, {
 	reloadItems: function() {
 		var results = this.storage.getData();
 
-		console.log(results);
+		console.log('====== RELOAD ITEMS ========');
 
 		for (var i = 0; i < results.length; i++) { 
 			main.appendCard(results[i]);
@@ -109,21 +109,6 @@ News.MainScreen = Ext.extend(Ext.Carousel, {
 		this.insert(0, this.getCard(row));
 	},
 
-	appendData: function(results) {
-		console.log(results);
-
-		for (var i = 0; i < results.rows.length; i++) { 
-			var row = results.rows.item(i);
-			main.appendCard(row);
-      	}
-      	
-      	if (results.rows.length > 0) {
-			main.doLayout();
-      	}
-      	 
-      	return true; 
-    },
-    
 	prependDataHandler: function(transaction, results) {
       	return true; 
     },
