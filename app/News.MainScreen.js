@@ -22,21 +22,10 @@ News.MainScreen = Ext.extend(Ext.Carousel, {
 	
 			if (cnt == index + 1) {
 				console.log('last card');
-				// http://nachbaur.com/blog/telling-your-user-that-a-phonegap-application-is-busy
-				// http://stackoverflow.com/questions/7063910/phonegap-navigator-notification-activitystart-and-loadingstart-not-working
-				// https://github.com/phonegap/phonegap-plugins/tree/master/Android/StatusBarNotification
-				Ext.getBody().mask();
-				//navigator.notification.loadingStart();
 				this.loadNextData(newCard.id);
-				Ext.getBody().unmask();
-				//navigator.notification.loadingStop();
     	    } else if (index == 0) {
 				console.log('first card');
-				Ext.getBody().mask();
-				//navigator.notification.loadingStart();
 				this.loadPrevData(newCard.id);
-				Ext.getBody().unmask();
-				//navigator.notification.loadingStop();
     	    }
         }
     },

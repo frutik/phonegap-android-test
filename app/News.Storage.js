@@ -65,7 +65,7 @@ News.Storage = Ext.extend(Ext.util.Observable, {
 		        		that.storage.transaction(function(tx) {
 						tx.executeSql(
 							'insert into news (id, added, source, category, url, title, description) values (?, ?, ?, ?, ?, ?, ?);', 
-							[record.id, records.added, record.source,	records.category, record.url, records.title, record.description],
+							[record.id, records.added, record.source,	records.category, record.url, record.title, record.description],
 							that.logSuccessHandler, 
 							that.logErrorHandler
 						); 
@@ -98,7 +98,9 @@ News.Storage = Ext.extend(Ext.util.Observable, {
 	},
 
 	logErrorHandler: function (transaction, error) {
-		console.log(error);
+		console.log(error.message);
+		Ext.getBody().unmask();
+		//navigator.notification.loadingStop();
       	return true;  
 	},
 	
@@ -110,13 +112,19 @@ News.Storage = Ext.extend(Ext.util.Observable, {
 
 	getInitialRecords: function() {
 		that = this;
+		
+		// http://nachbaur.com/blog/telling-your-user-that-a-phonegap-application-is-busy
+		// http://stackoverflow.com/questions/7063910/phonegap-navigator-notification-activitystart-and-loadingstart-not-working
+		// https://github.com/phonegap/phonegap-plugins/tree/master/Android/StatusBarNotification
+		Ext.getBody().mask();
+		//navigator.notification.loadingStart();
 
 		console.log('getting initial recordset from db');
 	
 		try {
 			this.storage.transaction(function(tx) {
 				tx.executeSql(
-					'SELECT * FROM news where id > 10000000000 ORDER BY id LIMIT ?',
+					'SELECT * FROM news where id > 0 ORDER BY id LIMIT ?',
 					[that.initialBatch], 
 					function(transaction, results) {
 						if (results.rows.length == 0) {
@@ -126,6 +134,40 @@ News.Storage = Ext.extend(Ext.util.Observable, {
 						}
 	
 						that.data = that.getDataFromSql(results);
+						
+						Ext.getBody().unmask();
+						//navigator.notification.loadingStop();
+						
+						that.fireEvent('data_loaded'); 
+    				}, 
+					that.logErrorHandler
+				);
+			});
+		} catch(e) {
+			alert(e.message);
+		}
+	},
+
+	getPrevRecords: function(recordId) {
+		that = this;
+
+		that.recordId = recordId;
+		
+		console.log('getting prev recordset from db');
+	
+		try {
+			this.storage.transaction(function(tx) {
+				tx.executeSql(
+					'SELECT * FROM news where id < ? ORDER BY id LIMIT ?',
+					[that.recordId, that.initialBatch], 
+					function(transaction, results) {
+						if (results.rows.length == 0) {
+							console.log('EMPTY RECORDSET in News.Storage.getPrevRecords()');
+							that.fetchFromSite(that.actionFetchPrev, that.recordId, that.initialBatch);
+							return true;
+						}
+	
+						that.data = that.getDataFromSql(results) + that.data;
 						that.fireEvent('data_loaded'); 
     				}, 
 					that.logErrorHandler
@@ -142,62 +184,6 @@ News.Storage = Ext.extend(Ext.util.Observable, {
 			result[i] = data.rows.item(i); 
 		}
 		return result;
-	},
-
-	getPrevRecords: function(currentRecordId) {
-		that = this;
-		try {
-			that.storage.transaction(function(tx) {
-				tx.executeSql(
-					'SELECT * FROM items WHERE id < ? ORDER BY id LIMIT ?',
-					[currentRecordId, that.preloadBatch], 
-					function(transaction, results) {
-						console.log(results);
-						if (results.rows.length == 0) {
-							//main.storage.fetchFromSite(main.appendDataHandler2);
-							return true;
-						}
-					
-						// TODO combine old and new data????
-						that.data = results;
-						that.fireEvent('data_loaded'); 
-    				}, 
-					that.errorHandler
-				);
-			});
-		} catch(e) {
-			alert(e.message);
-		}
-	},
-
-	getNextRecords: function(currentRecordId) {
-		that = this;
-		try {
-			that.storage.transaction(function(tx) {
-				tx.executeSql(
-					'SELECT * FROM items WHERE id > ? ORDER BY id LIMIT ?',
-					[currentRecordId, that.preloadBatch], 
-					function(transaction, results) {
-						console.log(results);
-						if (results.rows.length == 0) {
-							//main.storage.fetchFromSite(main.appendDataHandler2);
-							return true;
-						}
-					
-						// TODO combine old and new data????
-						that.data = results;
-						that.fireEvent('data_loaded'); 
-    				}, 
-					that.errorHandler
-				);
-			});
-		} catch(e) {
-			alert(e.message);
-		}
-	},
-
-	test: function() {
-		this.fireEvent('new_data'); 
 	},
 
 	constructor: function() {
