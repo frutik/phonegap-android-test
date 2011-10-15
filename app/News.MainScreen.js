@@ -32,11 +32,6 @@ News.MainScreen = Ext.extend(Ext.Carousel, {
 
 	getCard: function(node) {
 		return new Ext.Panel({
-				//TODO store compiled
-				/*
-				t.append('some-element', {id: 'myid', cls: 'myclass', name: 'foo', value: 'bar'});
-				*/				
-    			// html: new Ext.XTemplate("<h4>{title}</h4><hr>{description}").apply({
     			html: this.elementTemplate.apply({
                 	title: node.title,
                 	description: node.description
@@ -50,7 +45,7 @@ News.MainScreen = Ext.extend(Ext.Carousel, {
 
     initComponent: function() {
         this.fullscreen = true;
-//        this.indicator = false;
+        this.indicator = false;
         this.defaults = {
             style       : 'margin:10px;'
         };
