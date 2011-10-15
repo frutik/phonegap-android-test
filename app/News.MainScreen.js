@@ -59,7 +59,7 @@ News.MainScreen = Ext.extend(Ext.Carousel, {
         this.items = [];
 
 		this.storage = new News.Storage();
-    	  
+    	
         News.MainScreen.superclass.initComponent.call(this);
 
     	this.storage.addListener('data_loaded', this.reloadItems, this);

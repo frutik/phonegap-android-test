@@ -2,11 +2,9 @@ Ext.ns('News');
 
 News.Storage = Ext.extend(Ext.util.Observable, {                                                                                                                                        
                                                                                                                                                                                                 
-    //singleton: true,                                    
-    
     actionFetchInitial: '',
     actionFetchAfter: 'a',
-    actionFetchBefore: 'a',
+    actionFetchBefore: 'b',
     actionFetchLimit: 'l',
                                                                                                                                                                                                 
 	storage: false,
@@ -83,7 +81,6 @@ News.Storage = Ext.extend(Ext.util.Observable, {
      },
      
      getDataFromWeb: function(data) {
-     
      	return data;
      },
 
@@ -184,6 +181,13 @@ News.Storage = Ext.extend(Ext.util.Observable, {
 			result[i] = data.rows.item(i); 
 		}
 		return result;
+	},
+
+	reset: function() {
+    	console.log('RESET STORAGE');
+    	this.storage.transaction(function(tx) {
+        	tx.executeSql('DELETE FROM news;', [], this.logDataHandler, this.logErrorHandler); 
+    	});
 	},
 
 	constructor: function() {
