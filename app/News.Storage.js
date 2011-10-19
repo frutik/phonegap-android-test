@@ -164,7 +164,7 @@ News.Storage = Ext.extend(Ext.util.Observable, {
 							return true;
 						}
 	
-						that.data = that.getDataFromSql(results) + that.data;
+						that.data = that.data + that.getDataFromSql(results);
 						that.fireEvent('data_loaded'); 
     				}, 
 					that.logErrorHandler

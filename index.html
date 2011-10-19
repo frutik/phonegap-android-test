@@ -4,8 +4,9 @@
         <title>mobile-webapps.blogspot.com - Sencha Touch Tutorial</title>
 
         <link rel="stylesheet" href="sencha-touch/resources/css/sencha-touch.css" type="text/css">
-
+		<link rel="stylesheet" type="text/css" href="css/android.css"/>
         <script type="text/javascript" src="js/phonegap-1.0.0.js"></script>
+        <script type="text/javascript" src="js/jquery-1.6.4.min.js"></script>
 
         <script type="text/javascript" src="sencha-touch/sencha-touch.js"></script>
         <script type="text/javascript" src="app/News.MainScreen.js"></script>
@@ -17,8 +18,28 @@
             Ext.setup({
                 onReady: function() {
                     main = new News.MainScreen();
+                    
+                    $('#prefBtn2').bind('click', main.resetStorage);
                 }
             });
         </script>
+        <div id="menu">
+          <button id="prefBtn2" type="submit">
+              <img src="images/menu_preferences.png"/><br/>
+              Preferences
+          </button>          <button id="refreshBtn" type="submit" onclick="doRefresh()">
+              <img src="images/menu_refresh.png"/><br/>
+              Refresh
+          </button>
+                    <button id="refreshBtn" type="submit" onclick="doRefresh()">
+              <img src="images/menu_refresh.png"/><br/>
+              Refresh
+          </button>
+          
+          <button id="refreshBtn" type="submit" onclick="doRefresh()">
+              <img src="images/menu_refresh.png"/><br/>
+              Refresh
+          </button>
+      </div>
     </body>
 </html>

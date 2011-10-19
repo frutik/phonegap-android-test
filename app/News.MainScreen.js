@@ -63,9 +63,19 @@ News.MainScreen = Ext.extend(Ext.Carousel, {
         News.MainScreen.superclass.initComponent.call(this);
 
     	this.storage.addListener('data_loaded', this.reloadItems, this);
+		document.addEventListener("menubutton", this.onMenuKeyDown, false);
 
 		this.loadInitialData();
     },
+
+	onMenuKeyDown: function() {
+   		var menu = document.getElementById("menu");
+        if (menu.style.display == "none" || menu.style.display == "") {
+            menu.style.display = "block";
+        } else {
+            menu.style.display = "none";
+        }	
+	},
 
 	reloadItems: function() {
 		var results = this.storage.getData();
@@ -95,6 +105,10 @@ News.MainScreen = Ext.extend(Ext.Carousel, {
 
 	prependDataHandler: function(transaction, results) {
       	return true; 
+    },
+    
+    resetStorage: function() {
+    	this.storage.reset();
     },
 
 	loadInitialData: function() {
